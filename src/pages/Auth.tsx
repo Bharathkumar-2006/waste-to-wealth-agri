@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,11 +9,30 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Leaf, ArrowLeft, Globe, Users, Truck } from "lucide-react";
 import Layout from "@/components/Layout";
+import { useAuth } from "@/hooks/useAuth";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [userType, setUserType] = useState("farmer");
   const [language, setLanguage] = useState("en");
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    location: "",
+    password: ""
+  });
+  
+  const { user, signUp, signIn } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect authenticated users to home
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const languages = [
     { code: "en", name: "English" },
@@ -44,10 +63,39 @@ const Auth = () => {
     }
   ];
 
-  const handleAuth = async (isSignUp: boolean) => {
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
+      return;
+    }
+
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const metadata = {
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      phone: formData.phone,
+      location: formData.location,
+      user_type: userType,
+      language: language
+    };
+
+    await signUp(formData.email, formData.password, metadata);
+    setIsLoading(false);
+  };
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.email || !formData.password) {
+      return;
+    }
+
+    setIsLoading(true);
+    await signIn(formData.email, formData.password);
     setIsLoading(false);
   };
 
@@ -120,13 +168,15 @@ const Auth = () => {
                       </CardDescription>
                     </div>
                     
-                    <div className="space-y-4">
+                    <form onSubmit={handleSignIn} className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="signin-email">Email</Label>
                         <Input
                           id="signin-email"
                           type="email"
                           placeholder="your@email.com"
+                          value={formData.email}
+                          onChange={(e) => handleInputChange("email", e.target.value)}
                           required
                         />
                       </div>
@@ -136,17 +186,19 @@ const Auth = () => {
                           id="signin-password"
                           type="password"
                           placeholder="••••••••"
+                          value={formData.password}
+                          onChange={(e) => handleInputChange("password", e.target.value)}
                           required
                         />
                       </div>
                       <Button 
+                        type="submit"
                         className="w-full gradient-primary shadow-green" 
-                        onClick={() => handleAuth(false)}
                         disabled={isLoading}
                       >
                         {isLoading ? "Signing in..." : "Sign In"}
                       </Button>
-                    </div>
+                    </form>
                   </TabsContent>
 
                   <TabsContent value="signup" className="space-y-4">
@@ -157,7 +209,7 @@ const Auth = () => {
                       </CardDescription>
                     </div>
 
-                    <div className="space-y-4">
+                    <form onSubmit={handleSignUp} className="space-y-4">
                       {/* User Type Selection */}
                       <div className="space-y-3">
                         <Label>I am a:</Label>
@@ -199,6 +251,8 @@ const Auth = () => {
                           <Input
                             id="first-name"
                             placeholder="John"
+                            value={formData.firstName}
+                            onChange={(e) => handleInputChange("firstName", e.target.value)}
                             required
                           />
                         </div>
@@ -207,6 +261,8 @@ const Auth = () => {
                           <Input
                             id="last-name"
                             placeholder="Doe"
+                            value={formData.lastName}
+                            onChange={(e) => handleInputChange("lastName", e.target.value)}
                             required
                           />
                         </div>
@@ -218,6 +274,8 @@ const Auth = () => {
                           id="signup-email"
                           type="email"
                           placeholder="your@email.com"
+                          value={formData.email}
+                          onChange={(e) => handleInputChange("email", e.target.value)}
                           required
                         />
                       </div>
@@ -228,6 +286,8 @@ const Auth = () => {
                           id="phone"
                           type="tel"
                           placeholder="+91 98765 43210"
+                          value={formData.phone}
+                          onChange={(e) => handleInputChange("phone", e.target.value)}
                           required
                         />
                       </div>
@@ -237,6 +297,8 @@ const Auth = () => {
                         <Input
                           id="location"
                           placeholder="Village, District, State"
+                          value={formData.location}
+                          onChange={(e) => handleInputChange("location", e.target.value)}
                           required
                         />
                       </div>
@@ -247,18 +309,20 @@ const Auth = () => {
                           id="signup-password"
                           type="password"
                           placeholder="••••••••"
+                          value={formData.password}
+                          onChange={(e) => handleInputChange("password", e.target.value)}
                           required
                         />
                       </div>
 
                       <Button 
+                        type="submit"
                         className="w-full gradient-primary shadow-green" 
-                        onClick={() => handleAuth(true)}
                         disabled={isLoading}
                       >
                         {isLoading ? "Creating account..." : "Create Account"}
                       </Button>
-                    </div>
+                    </form>
                   </TabsContent>
 
                   <div className="pt-4 border-t">
