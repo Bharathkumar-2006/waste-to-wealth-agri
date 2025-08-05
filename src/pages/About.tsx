@@ -44,7 +44,7 @@ const About = () => {
       description: "Former FPO coordinator with deep understanding of rural agricultural networks."
     },
     {
-      name: "Dr. Bharathkumar",
+      name: "Dr. M.Bharathkumar",
       role: "Head of Research",
       description: "Researcher in agricultural waste management and circular economy principles."
     }
