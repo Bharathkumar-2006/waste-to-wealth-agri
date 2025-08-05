@@ -43,13 +43,13 @@ const Contact = () => {
     {
       icon: Phone,
       title: "Call Us",
-      value: "+91 1800-AGRI-CYCLE",
+      value: "+91 1800-4070-4070",
       description: "Mon-Fri 9AM-6PM IST"
     },
     {
       icon: MapPin,
       title: "Visit Us",
-      value: "Tech Hub, Bangalore, India",
+      value: "Tech Hub, Coimbatore, India",
       description: "Headquarters"
     },
     {
@@ -191,7 +191,7 @@ const Contact = () => {
                           type="tel"
                           value={formData.phone}
                           onChange={(e) => handleInputChange("phone", e.target.value)}
-                          placeholder="+91 98765 "
+                          placeholder="+91 98765 XXXXX "
                         />
                       </div>
                       <div className="space-y-2">

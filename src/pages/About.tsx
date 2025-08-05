@@ -29,22 +29,22 @@ const About = () => {
 
   const team = [
     {
-      name: "Dr. Priya Sharma",
+      name: "Dr. Mahalakshmi ",
       role: "CEO & Co-Founder",
       description: "Agricultural scientist with 15 years of experience in sustainable farming practices."
     },
     {
-      name: "Ravi Kumar",
+      name: "Vidhuran C",
       role: "CTO & Co-Founder",
       description: "AI/ML expert specializing in computer vision and agricultural technology solutions."
     },
     {
-      name: "Anita Patel",
+      name: "Nethra S",
       role: "Head of Operations",
       description: "Former FPO coordinator with deep understanding of rural agricultural networks."
     },
     {
-      name: "Dr. Suresh Reddy",
+      name: "Dr. Bharathkumar",
       role: "Head of Research",
       description: "Researcher in agricultural waste management and circular economy principles."
     }
@@ -67,7 +67,7 @@ const About = () => {
               </span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Founded in 2023, AgriCycle is on a mission to revolutionize agricultural waste management 
+              Founded in 2025, AgriCycle is on a mission to revolutionize agricultural waste management 
               through technology, creating sustainable solutions that benefit farmers, industries, and the environment.
             </p>
           </div>
@@ -173,7 +173,7 @@ const About = () => {
             <Card className="gradient-card shadow-glow p-8">
               <div className="space-y-6">
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-primary mb-2">2023</div>
+                  <div className="text-4xl font-bold text-primary mb-2">2025</div>
                   <p className="text-muted-foreground">Founded</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-center">

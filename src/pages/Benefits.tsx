@@ -59,19 +59,19 @@ const Benefits = () => {
 
   const testimonials = [
     {
-      name: "Rajesh Kumar",
+      name: "Rajesh",
       role: "Rice Farmer, Punjab",
       content: "I used to burn my rice stubble every year. Now I earn ₹12,000 annually by selling it through AgriCycle.",
       savings: "₹12,000 annually"
     },
     {
-      name: "Sunita Cooperative",
+      name: "Lannisters",
       role: "FPO, Maharashtra",
       content: "Our 200 member farmers collectively earn ₹8 lakhs annually from sugarcane bagasse sales.",
       savings: "₹8 lakhs annually"
     },
     {
-      name: "GreenTech Industries",
+      name: "Winterfell Industries",
       role: "Industry Partner",
       content: "AgriCycle provides us with consistent, quality agricultural waste for our bio-fuel production.",
       savings: "40% cost reduction"

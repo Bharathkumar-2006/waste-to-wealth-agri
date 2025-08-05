@@ -285,7 +285,7 @@ const Auth = () => {
                         <Input
                           id="phone"
                           type="tel"
-                          placeholder="+91 98765 43210"
+                          placeholder="+91 72008 51371"
                           value={formData.phone}
                           onChange={(e) => handleInputChange("phone", e.target.value)}
                           required
