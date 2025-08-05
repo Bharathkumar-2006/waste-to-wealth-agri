@@ -59,13 +59,13 @@ const Benefits = () => {
 
   const testimonials = [
     {
-      name: "Rajesh",
+      name: "Jon snow",
       role: "Rice Farmer, Punjab",
       content: "I used to burn my rice stubble every year. Now I earn ₹12,000 annually by selling it through AgriCycle.",
       savings: "₹12,000 annually"
     },
     {
-      name: "Lannisters",
+      name: "Cercei Lannister",
       role: "FPO, Maharashtra",
       content: "Our 200 member farmers collectively earn ₹8 lakhs annually from sugarcane bagasse sales.",
       savings: "₹8 lakhs annually"
