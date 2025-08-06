@@ -148,17 +148,24 @@ const WasteIdentification = () => {
                     </Button>
                   ) : (
                     <div className="space-y-4">
-                      <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        className="w-full rounded-lg"
-                      />
+                      <div className="relative">
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          className="w-full rounded-lg bg-muted"
+                          style={{ maxHeight: '400px' }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="w-64 h-64 border-2 border-primary/50 rounded-lg"></div>
+                        </div>
+                      </div>
                       <div className="flex gap-2">
-                        <Button onClick={capturePhoto} className="flex-1">
-                          Capture
+                        <Button onClick={capturePhoto} className="flex-1" size="lg">
+                          <Camera className="h-5 w-5 mr-2" />
+                          Capture Photo
                         </Button>
-                        <Button onClick={stopCamera} variant="outline">
+                        <Button onClick={stopCamera} variant="outline" size="lg">
                           Cancel
                         </Button>
                       </div>
