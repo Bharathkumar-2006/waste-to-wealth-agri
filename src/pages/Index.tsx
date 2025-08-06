@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Leaf, 
   Recycle, 
@@ -18,6 +19,7 @@ import {
 import Layout from "@/components/Layout";
 
 const Index = () => {
+  const { user } = useAuth();
   const features = [
     {
       icon: Brain,
@@ -81,11 +83,19 @@ const Index = () => {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="gradient-primary shadow-green text-lg px-8" asChild>
-                  <Link to="/auth">
-                    Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
-                  </Link>
-                </Button>
+                {user ? (
+                  <Button size="lg" className="gradient-primary shadow-green text-lg px-8" asChild>
+                    <Link to="/waste-identification">
+                      Identify Waste <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button size="lg" className="gradient-primary shadow-green text-lg px-8" asChild>
+                    <Link to="/auth">
+                      Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
+                  </Button>
+                )}
                 <Button size="lg" variant="outline" className="text-lg px-8" asChild>
                   <Link to="/how-it-works">Learn How It Works</Link>
                 </Button>
@@ -111,10 +121,19 @@ const Index = () => {
                     <Badge variant="secondary">AI Powered</Badge>
                   </div>
                   <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                    <div className="text-center space-y-2">
-                      <Leaf className="h-12 w-12 text-primary mx-auto" />
-                      <p className="text-sm text-muted-foreground">Upload Image or Description</p>
-                    </div>
+                    {user ? (
+                      <Button asChild className="gradient-primary">
+                        <Link to="/waste-identification">
+                          <Leaf className="h-6 w-6 mr-2" />
+                          Start Identification
+                        </Link>
+                      </Button>
+                    ) : (
+                      <div className="text-center space-y-2">
+                        <Leaf className="h-12 w-12 text-primary mx-auto" />
+                        <p className="text-sm text-muted-foreground">Login to Access Waste Identification</p>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">

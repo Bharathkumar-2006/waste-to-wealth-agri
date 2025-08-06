@@ -1,0 +1,2 @@
+-- Store Gemini API key in secrets for edge functions
+-- This will be handled through the secrets interface

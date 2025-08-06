@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Leaf, Globe } from "lucide-react";
+import { Menu, X, Leaf, Globe, User, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Select,
   SelectContent,
@@ -14,6 +17,7 @@ import {
 const Header = () => {
   const location = useLocation();
   const [language, setLanguage] = useState("en");
+  const { user, signOut } = useAuth();
 
   const navigation = [
     { name: "Home", href: "/" },
@@ -21,6 +25,10 @@ const Header = () => {
     { name: "How It Works", href: "/how-it-works" },
     { name: "Benefits", href: "/benefits" },
     { name: "Contact", href: "/contact" },
+    ...(user ? [
+      { name: "Marketplace", href: "/marketplace" },
+      { name: "Waste ID", href: "/waste-identification" }
+    ] : [])
   ];
 
   const languages = [
@@ -77,12 +85,48 @@ const Header = () => {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" asChild>
-              <Link to="/auth">Login</Link>
-            </Button>
-            <Button className="gradient-primary shadow-green" asChild>
-              <Link to="/auth">Get Started</Link>
-            </Button>
+            {user ? (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src="" alt={user.user_metadata?.first_name || user.email} />
+                      <AvatarFallback>
+                        {user.user_metadata?.first_name?.[0] || user.email?.[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56" align="end">
+                  <div className="space-y-2">
+                    <div className="px-2 py-1.5">
+                      <p className="text-sm font-medium">{user.user_metadata?.first_name} {user.user_metadata?.last_name}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{user.user_metadata?.user_type}</p>
+                    </div>
+                    <div className="border-t pt-2">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start h-auto p-2"
+                        onClick={signOut}
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Sign out
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <>
+                <Button variant="outline" asChild>
+                  <Link to="/auth">Login</Link>
+                </Button>
+                <Button className="gradient-primary shadow-green" asChild>
+                  <Link to="/auth">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -132,12 +176,28 @@ const Header = () => {
                     </SelectContent>
                   </Select>
                   
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link to="/auth">Login</Link>
-                  </Button>
-                  <Button className="w-full gradient-primary shadow-green" asChild>
-                    <Link to="/auth">Get Started</Link>
-                  </Button>
+                  {user ? (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="font-medium">{user.user_metadata?.first_name} {user.user_metadata?.last_name}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{user.user_metadata?.user_type}</p>
+                      </div>
+                      <Button onClick={signOut} className="w-full" variant="outline">
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Sign Out
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Button variant="outline" className="w-full" asChild>
+                        <Link to="/auth">Login</Link>
+                      </Button>
+                      <Button className="w-full gradient-primary shadow-green" asChild>
+                        <Link to="/auth">Get Started</Link>
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </SheetContent>
