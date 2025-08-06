@@ -1,8 +1,17 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Upload, Loader2, AlertCircle, Recycle, DollarSign, Building, Leaf } from "lucide-react";
+import {
+  Camera,
+  Upload,
+  Loader2,
+  Recycle,
+  DollarSign,
+  Building,
+  Leaf,
+  RefreshCcw,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/Layout";
@@ -19,14 +28,25 @@ const WasteIdentification = () => {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
       });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setIsCameraActive(true);
-      }
+      setIsCameraActive(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch((err) => {
+            console.error("Video playback failed:", err);
+            toast({
+              title: "Playback Error",
+              description: "Couldn't start the camera. Please refresh or try again.",
+              variant: "destructive",
+            });
+          });
+        }
+      }, 100);
     } catch (error) {
+      console.error("Camera error:", error);
       toast({
         title: "Camera Access Denied",
         description: "Please allow camera access to take photos of waste.",
@@ -38,7 +58,7 @@ const WasteIdentification = () => {
   const stopCamera = () => {
     if (videoRef.current?.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       videoRef.current.srcObject = null;
       setIsCameraActive(false);
     }
@@ -50,11 +70,10 @@ const WasteIdentification = () => {
       const video = videoRef.current;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.drawImage(video, 0, 0);
-        const imageData = canvas.toDataURL('image/jpeg', 0.8);
+        const imageData = canvas.toDataURL("image/jpeg", 0.8);
         setSelectedImage(imageData);
         stopCamera();
         analyzeWaste(imageData);
@@ -80,25 +99,53 @@ const WasteIdentification = () => {
     setAnalysisResult(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('waste-identification', {
-        body: { image: imageData }
+      const { data, error } = await supabase.functions.invoke("waste-identification", {
+        body: { image: imageData },
       });
 
-      if (error) {
-        throw error;
+      if (error) throw error;
+
+      let analysis = data.analysis;
+      if (typeof analysis === "string") {
+        try {
+          analysis = JSON.parse(analysis);
+        } catch {}
+      }
+
+      if (analysis) {
+        if (typeof analysis.recyclingMethods === "string") {
+          try {
+            analysis.recyclingMethods = JSON.parse(analysis.recyclingMethods);
+          } catch {}
+        }
+        if (typeof analysis.interestedIndustries === "string") {
+          try {
+            analysis.interestedIndustries = JSON.parse(analysis.interestedIndustries);
+          } catch {}
+        }
+        if (typeof analysis.environmentalImpact === "string") {
+          try {
+            analysis.environmentalImpact = JSON.parse(analysis.environmentalImpact);
+          } catch {}
+        }
+        if (typeof analysis.marketValue === "string") {
+          try {
+            analysis.marketValue = JSON.parse(analysis.marketValue);
+          } catch {}
+        }
       }
 
       if (data.success) {
-        setAnalysisResult(data.analysis);
+        setAnalysisResult(analysis);
         toast({
           title: "Analysis Complete",
           description: "Your waste has been successfully analyzed!",
         });
       } else {
-        throw new Error(data.error || 'Analysis failed');
+        throw new Error(data.error || "Analysis failed");
       }
     } catch (error: any) {
-      console.error('Analysis error:', error);
+      console.error("Analysis error:", error);
       toast({
         title: "Analysis Failed",
         description: error.message || "Failed to analyze the waste. Please try again.",
@@ -113,59 +160,53 @@ const WasteIdentification = () => {
     setSelectedImage(null);
     setAnalysisResult(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-4">
-              AI Waste Identification
+      <div className="min-h-screen bg-gradient-to-tr from-emerald-100 to-white dark:from-gray-900 dark:to-gray-800 py-10">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex flex-col items-center mb-8">
+            <Recycle className="h-16 w-16 text-emerald-600 mb-2" />
+            <h1 className="text-3xl font-bold text-emerald-800 dark:text-emerald-200 mb-1 text-center">
+              Waste Identification
             </h1>
-            <p className="text-lg text-muted-foreground">
-              Upload an image or take a photo of your agricultural waste to get instant analysis and recycling suggestions.
+            <p className="text-base text-gray-600 dark:text-gray-300 text-center">
+              Upload or capture a photo of your agricultural waste to get instant AI-powered recycling insights.
             </p>
           </div>
 
           {!selectedImage && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <Card className="p-6">
+            <div className="flex flex-col md:flex-row gap-6 mb-10">
+              {/* Camera Card */}
+              <Card className="flex-1 border-emerald-200 shadow-md">
                 <CardHeader className="text-center">
-                  <Camera className="h-12 w-12 text-primary mx-auto mb-4" />
-                  <CardTitle>Take Photo</CardTitle>
-                  <CardDescription>
-                    Use your camera to capture waste images
-                  </CardDescription>
+                  <Camera className="h-8 w-8 text-emerald-500 mx-auto mb-1" />
+                  <CardTitle className="text-lg">Self View Camera</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {!isCameraActive ? (
-                    <Button onClick={startCamera} className="w-full">
-                      <Camera className="h-4 w-4 mr-2" />
+                    <Button onClick={startCamera} className="w-full" size="lg" variant="emerald">
+                      <Camera className="h-5 w-5 mr-2" />
                       Start Camera
                     </Button>
                   ) : (
-                    <div className="space-y-4">
-                      <div className="relative">
-                        <video
-                          ref={videoRef}
-                          autoPlay
-                          playsInline
-                          className="w-full rounded-lg bg-muted"
-                          style={{ maxHeight: '400px' }}
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div className="w-64 h-64 border-2 border-primary/50 rounded-lg"></div>
-                        </div>
-                      </div>
+                    <div>
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        className="w-full rounded-lg border border-emerald-200 bg-muted mb-3"
+                        style={{ maxHeight: "250px", transform: "scaleX(-1)" }}
+                      />
                       <div className="flex gap-2">
-                        <Button onClick={capturePhoto} className="flex-1" size="lg">
+                        <Button onClick={capturePhoto} className="flex-1" size="lg" variant="emerald">
                           <Camera className="h-5 w-5 mr-2" />
-                          Capture Photo
+                          Capture & Analyze
                         </Button>
-                        <Button onClick={stopCamera} variant="outline" size="lg">
+                        <Button onClick={stopCamera} variant="outline" size="lg" className="flex-1">
                           Cancel
                         </Button>
                       </div>
@@ -174,21 +215,20 @@ const WasteIdentification = () => {
                 </CardContent>
               </Card>
 
-              <Card className="p-6">
+              {/* Upload Card */}
+              <Card className="flex-1 border-emerald-200 shadow-md">
                 <CardHeader className="text-center">
-                  <Upload className="h-12 w-12 text-primary mx-auto mb-4" />
-                  <CardTitle>Upload Image</CardTitle>
-                  <CardDescription>
-                    Select an image file from your device
-                  </CardDescription>
+                  <Upload className="h-8 w-8 text-emerald-500 mx-auto mb-1" />
+                  <CardTitle className="text-lg">Upload Image</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Button
                     onClick={() => fileInputRef.current?.click()}
                     className="w-full"
+                    size="lg"
                     variant="outline"
                   >
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-5 w-5 mr-2" />
                     Choose File
                   </Button>
                   <input
@@ -203,116 +243,132 @@ const WasteIdentification = () => {
             </div>
           )}
 
+          {/* Hidden canvas */}
+          <canvas ref={canvasRef} className="hidden" />
+
+          {/* Result and Preview Section */}
           {selectedImage && (
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Selected Image
-                  <Button onClick={resetAnalysis} variant="outline" size="sm">
-                    Try Another
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <img
-                  src={selectedImage}
-                  alt="Selected waste"
-                  className="w-full max-w-md mx-auto rounded-lg"
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {isAnalyzing && (
-            <Card className="mb-8">
-              <CardContent className="p-8 text-center">
-                <Loader2 className="h-12 w-12 text-primary mx-auto mb-4 animate-spin" />
-                <h3 className="text-xl font-semibold mb-2">Analyzing Waste...</h3>
-                <p className="text-muted-foreground">
-                  Our AI is identifying your waste and finding the best recycling options.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {analysisResult && (
-            <div className="space-y-6">
-              <Card>
+            <div className="mt-6 space-y-6">
+              <Card className="shadow-md border-emerald-200">
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Recycle className="h-5 w-5 text-primary mr-2" />
-                    Waste Analysis Results
+                  <CardTitle className="text-lg text-emerald-700 dark:text-emerald-300">
+                    Captured Image
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">Waste Type:</h4>
-                    <Badge variant="secondary" className="text-sm">
-                      {analysisResult.wasteType}
-                    </Badge>
-                  </div>
-
-                  <div>
-                    <h4 className="font-semibold mb-2 flex items-center">
-                      <DollarSign className="h-4 w-4 mr-1" />
-                      Market Value:
-                    </h4>
-                    <p className="text-lg font-semibold text-primary">
-                      {analysisResult.marketValue}
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="font-semibold mb-2">Recycling Methods:</h4>
-                    <div className="space-y-2">
-                      {analysisResult.recyclingMethods?.map((method: string, index: number) => (
-                        <div key={index} className="p-3 bg-muted rounded-lg">
-                          <p className="text-sm">{method}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-semibold mb-2 flex items-center">
-                      <Building className="h-4 w-4 mr-1" />
-                      Interested Industries:
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {analysisResult.interestedIndustries?.map((industry: string, index: number) => (
-                        <Badge key={index} variant="outline">
-                          {industry}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-semibold mb-2 flex items-center">
-                      <Leaf className="h-4 w-4 mr-1" />
-                      Environmental Impact:
-                    </h4>
-                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                      <p className="text-sm text-green-800 dark:text-green-200">
-                        {analysisResult.environmentalImpact}
-                      </p>
-                    </div>
-                  </div>
+                <CardContent className="text-center">
+                  <img
+                    src={selectedImage}
+                    alt="Selected"
+                    className="mx-auto rounded-md max-h-64 object-contain border"
+                  />
                 </CardContent>
               </Card>
 
-              <div className="flex gap-4">
-                <Button className="flex-1" asChild>
-                  <a href="/marketplace">Find Buyers</a>
-                </Button>
-                <Button variant="outline" onClick={resetAnalysis}>
-                  Analyze Another
-                </Button>
-              </div>
+              {isAnalyzing && (
+                <div className="text-center">
+                  <Loader2 className="animate-spin h-6 w-6 text-emerald-500 mx-auto" />
+                  <p className="text-gray-600 dark:text-gray-300 mt-2">Analyzing waste...</p>
+                </div>
+              )}
+
+              {analysisResult && (
+                <Card className="shadow-lg border-emerald-300">
+                  <CardHeader>
+                    <CardTitle className="text-2xl text-emerald-700 flex items-center gap-2">
+                      <Recycle className="h-6 w-6" />
+                      Waste Analysis Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+
+                    {/* Waste Type */}
+                    <div>
+                      <h3 className="font-bold text-lg mb-2">♻ Waste Type:</h3>
+                      <p className="text-emerald-900 dark:text-emerald-100 text-base font-semibold">
+                        {analysisResult.wasteType || "Unknown"}
+                      </p>
+                    </div>
+
+                    {/* Recycling Methods */}
+                    <div>
+                      <h3 className="font-bold text-lg mb-2">Recommended Recycling Methods:</h3>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {Array.isArray(analysisResult.recyclingMethods) && analysisResult.recyclingMethods.length > 0 ? (
+                          analysisResult.recyclingMethods.map((method: string, idx: number) => (
+                            <li key={idx} className="text-gray-700 dark:text-gray-200">{method}</li>
+                          ))
+                        ) : (
+                          <li className="text-gray-500">No recommendations available.</li>
+                        )}
+                      </ul>
+                    </div>
+
+                    {/* Market Value */}
+                    <div>
+                      <h3 className="font-bold text-lg mb-2">💰 Market Value Estimates:</h3>
+                      {analysisResult.marketValue && typeof analysisResult.marketValue === "object" ? (
+                        <ul className="list-disc pl-5 space-y-1">
+                          {analysisResult.marketValue.note && (
+                            <li className="mb-1 text-muted-foreground">{analysisResult.marketValue.note}</li>
+                          )}
+                          {Object.entries(analysisResult.marketValue)
+                            .filter(([key]) => key !== "note")
+                            .map(([key, value]) => (
+                              <li key={key} className="text-gray-700 dark:text-gray-200">
+                                <span className="font-medium capitalize">{key.replace(/_/g, " ")}:</span> {value as string}
+                              </li>
+                            ))}
+                        </ul>
+                      ) : (
+                        <span className="text-gray-500">No data available.</span>
+                      )}
+                    </div>
+
+                    {/* Interested Industries */}
+                    <div>
+                      <h3 className="font-bold text-lg mb-2">🏭 Interested Industries:</h3>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {Array.isArray(analysisResult.interestedIndustries) && analysisResult.interestedIndustries.length > 0 ? (
+                          analysisResult.interestedIndustries.map((industry: string, idx: number) => (
+                            <li key={idx} className="text-gray-700 dark:text-gray-200">{industry}</li>
+                          ))
+                        ) : (
+                          <li className="text-gray-500">No data available.</li>
+                        )}
+                      </ul>
+                    </div>
+
+                    {/* Environmental Impact */}
+                    <div>
+                      <h3 className="font-bold text-lg mb-2">🌱 Environmental Impact:</h3>
+                      {analysisResult.environmentalImpact && typeof analysisResult.environmentalImpact === "object" ? (
+                        <ul className="list-disc pl-5 space-y-1">
+                          {Object.entries(analysisResult.environmentalImpact).map(([key, value]) => (
+                            <li key={key} className="text-green-800 dark:text-green-200">
+                              <span className="font-medium capitalize">{key}:</span> {value as string}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-gray-500">No data available.</span>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-col md:flex-row gap-4 mt-4">
+                      <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" asChild>
+                        <a href="/marketplace">Find Buyers</a>
+                      </Button>
+                      <Button variant="outline" onClick={resetAnalysis} className="flex-1">
+                        <RefreshCcw className="h-5 w-5 mr-2" />
+                        Analyze Another
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
-
-          <canvas ref={canvasRef} className="hidden" />
         </div>
       </div>
     </Layout>
