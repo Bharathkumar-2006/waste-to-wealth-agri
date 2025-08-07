@@ -157,11 +157,24 @@ Format your response as JSON with these exact keys:
     }
 
     const generatedText = data.candidates[0].content.parts[0].text;
-    
     try {
-      // Try to parse as JSON
-      const analysisResult = JSON.parse(generatedText);
+      let analysisResult;
       
+      // Check if response contains markdown code blocks
+      if (generatedText.includes('```json')) {
+        // Extract JSON from markdown code block
+        const jsonMatch = generatedText.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          // Remove any trailing commas before closing braces/brackets
+          const cleanedJson = jsonMatch[1].replace(/,(\s*[}\]])/g, '$1');
+          analysisResult = JSON.parse(cleanedJson);
+        } else {
+          throw new Error('Could not extract JSON from markdown');
+        }
+      } else {
+        // Try to parse as direct JSON
+        analysisResult = JSON.parse(generatedText);
+      }
       return new Response(JSON.stringify({
         success: true,
         analysis: analysisResult
@@ -170,17 +183,21 @@ Format your response as JSON with these exact keys:
       });
     } catch (parseError) {
       console.error('Failed to parse JSON response:', parseError);
-      // If parsing fails, return the raw text
+      console.error('Original response:', generatedText);
+      
+      // Fallback: return a structured response with the raw text
       return new Response(JSON.stringify({
         success: true,
         analysis: {
-          wasteType: "Unknown",
+          wasteType: "Analysis completed",
           recyclingMethods: [generatedText],
-          marketValue: "Analysis in progress",
-          interestedIndustries: ["Various"],
-          environmentalImpact: generatedText
+          marketValue: "Please see detailed analysis above",
+          interestedIndustries: ["Various industries"],
+          environmentalImpact: {
+            summary: "Analysis provided above contains environmental benefits"
+          }
         }
-      }), {
+        }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -191,4 +208,4 @@ Format your response as JSON with these exact keys:
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-});
+  });

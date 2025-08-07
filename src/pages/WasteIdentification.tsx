@@ -106,32 +106,45 @@ const WasteIdentification = () => {
       if (error) throw error;
 
       let analysis = data.analysis;
-      if (typeof analysis === "string") {
-        try {
-          analysis = JSON.parse(analysis);
-        } catch {}
-      }
-
+      // Deep clean any remaining JSON or markdown artifacts
       if (analysis) {
-        if (typeof analysis.recyclingMethods === "string") {
-          try {
-            analysis.recyclingMethods = JSON.parse(analysis.recyclingMethods);
-          } catch {}
+        // Clean recycling methods
+        if (analysis.recyclingMethods && Array.isArray(analysis.recyclingMethods)) {
+          analysis.recyclingMethods = analysis.recyclingMethods.map((method: any) => {
+            if (typeof method === 'string') {
+              // Remove any JSON artifacts or markdown
+              return method.replace(/```json|```|\{|\}/g, '').trim();
+            }
+            return method;
+          }).filter((method: string) => method && method.length > 10); // Filter out artifacts
         }
-        if (typeof analysis.interestedIndustries === "string") {
-          try {
-            analysis.interestedIndustries = JSON.parse(analysis.interestedIndustries);
-          } catch {}
+        
+        // Clean industries
+        if (analysis.interestedIndustries && Array.isArray(analysis.interestedIndustries)) {
+          analysis.interestedIndustries = analysis.interestedIndustries.filter((industry: string) => 
+            typeof industry === 'string' && industry.length > 2 && !industry.includes('{')
+          );
         }
-        if (typeof analysis.environmentalImpact === "string") {
-          try {
-            analysis.environmentalImpact = JSON.parse(analysis.environmentalImpact);
-          } catch {}
+        
+        // Clean environmental impact
+        if (analysis.environmentalImpact && typeof analysis.environmentalImpact === 'string') {
+          // If it's a string containing JSON, try to parse it
+          if (analysis.environmentalImpact.includes('{')) {
+            try {
+              const cleanStr = analysis.environmentalImpact.replace(/```json|```/g, '').trim();
+              const parsed = JSON.parse(cleanStr);
+              if (parsed.environmentalImpact) {
+                analysis.environmentalImpact = parsed.environmentalImpact;
+              }
+            } catch (e) {
+              // Keep as string if parsing fails
+            }
+          }
         }
-        if (typeof analysis.marketValue === "string") {
-          try {
-            analysis.marketValue = JSON.parse(analysis.marketValue);
-          } catch {}
+        
+        // Clean waste type
+        if (analysis.wasteType && typeof analysis.wasteType === 'string') {
+          analysis.wasteType = analysis.wasteType.replace(/```json|```|\{|\}/g, '').trim();
         }
       }
 
@@ -188,7 +201,7 @@ const WasteIdentification = () => {
                 </CardHeader>
                 <CardContent>
                   {!isCameraActive ? (
-                    <Button onClick={startCamera} className="w-full" size="lg" variant="emerald">
+                    <Button onClick={startCamera} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" size="lg">
                       <Camera className="h-5 w-5 mr-2" />
                       Start Camera
                     </Button>
@@ -202,7 +215,7 @@ const WasteIdentification = () => {
                         style={{ maxHeight: "250px", transform: "scaleX(-1)" }}
                       />
                       <div className="flex gap-2">
-                        <Button onClick={capturePhoto} className="flex-1" size="lg" variant="emerald">
+                        <Button onClick={capturePhoto} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" size="lg">
                           <Camera className="h-5 w-5 mr-2" />
                           Capture & Analyze
                         </Button>
@@ -272,96 +285,150 @@ const WasteIdentification = () => {
               )}
 
               {analysisResult && (
-                <Card className="shadow-lg border-emerald-300">
-                  <CardHeader>
-                    <CardTitle className="text-2xl text-emerald-700 flex items-center gap-2">
-                      <Recycle className="h-6 w-6" />
-                      Waste Analysis Summary
+                <Card className="shadow-lg border-emerald-300 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-gray-800">
+                  <CardHeader className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-t-lg">
+                    <CardTitle className="text-2xl flex items-center gap-2">
+                      <Recycle className="h-7 w-7" />
+                      AI Waste Analysis Results
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent className="space-y-8 p-6">
 
                     {/* Waste Type */}
-                    <div>
-                      <h3 className="font-bold text-lg mb-2">♻ Waste Type:</h3>
-                      <p className="text-emerald-900 dark:text-emerald-100 text-base font-semibold">
+                    <div className="bg-white dark:bg-gray-700 p-4 rounded-lg border-l-4 border-emerald-500">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900 rounded-full flex items-center justify-center">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">♻</span>
+                        </div>
+                        <h3 className="font-bold text-lg text-emerald-800 dark:text-emerald-200">Waste Type</h3>
+                      </div>
+                      <p className="text-gray-900 dark:text-gray-100 text-lg font-semibold ml-10">
                         {analysisResult.wasteType || "Unknown"}
                       </p>
                     </div>
 
                     {/* Recycling Methods */}
-                    <div>
-                      <h3 className="font-bold text-lg mb-2">Recommended Recycling Methods:</h3>
-                      <ul className="list-disc pl-5 space-y-1">
+                    <div className="bg-white dark:bg-gray-700 p-4 rounded-lg border-l-4 border-blue-500">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                          <RefreshCcw className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <h3 className="font-bold text-lg text-blue-800 dark:text-blue-200">Recycling Methods</h3>
+                      </div>
+                      <div className="ml-10 space-y-2">
                         {Array.isArray(analysisResult.recyclingMethods) && analysisResult.recyclingMethods.length > 0 ? (
                           analysisResult.recyclingMethods.map((method: string, idx: number) => (
-                            <li key={idx} className="text-gray-700 dark:text-gray-200">{method}</li>
+                            <div key={idx} className="flex items-start gap-2">
+                              <Badge variant="secondary" className="mt-0.5">{idx + 1}</Badge>
+                              <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{method}</p>
+                            </div>
                           ))
                         ) : (
-                          <li className="text-gray-500">No recommendations available.</li>
+                          <p className="text-gray-500 italic">No specific methods identified</p>
                         )}
-                      </ul>
+                      </div>
                     </div>
 
                     {/* Market Value */}
-                    <div>
-                      <h3 className="font-bold text-lg mb-2">💰 Market Value Estimates:</h3>
-                      {analysisResult.marketValue && typeof analysisResult.marketValue === "object" ? (
-                        <ul className="list-disc pl-5 space-y-1">
-                          {analysisResult.marketValue.note && (
-                            <li className="mb-1 text-muted-foreground">{analysisResult.marketValue.note}</li>
-                          )}
-                          {Object.entries(analysisResult.marketValue)
-                            .filter(([key]) => key !== "note")
-                            .map(([key, value]) => (
-                              <li key={key} className="text-gray-700 dark:text-gray-200">
-                                <span className="font-medium capitalize">{key.replace(/_/g, " ")}:</span> {value as string}
-                              </li>
-                            ))}
-                        </ul>
-                      ) : (
-                        <span className="text-gray-500">No data available.</span>
-                      )}
+                    <div className="bg-white dark:bg-gray-700 p-4 rounded-lg border-l-4 border-yellow-500">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
+                          <DollarSign className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                        </div>
+                        <h3 className="font-bold text-lg text-yellow-800 dark:text-yellow-200">Market Value</h3>
+                      </div>
+                      <div className="ml-10">
+                        {analysisResult.marketValue && typeof analysisResult.marketValue === "object" ? (
+                          <div className="space-y-2">
+                            {analysisResult.marketValue.note && (
+                              <p className="text-sm text-gray-600 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-600 p-2 rounded">
+                                {analysisResult.marketValue.note}
+                              </p>
+                            )}
+                            <div className="grid gap-2">
+                              {Object.entries(analysisResult.marketValue)
+                                .filter(([key]) => key !== "note")
+                                .map(([key, value]) => (
+                                  <div key={key} className="flex justify-between items-center p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded">
+                                    <span className="font-medium capitalize text-gray-700 dark:text-gray-200">
+                                      {key.replace(/_/g, " ").replace(":", "")}
+                                    </span>
+                                    <span className="text-yellow-700 dark:text-yellow-300 font-semibold">{value as string}</span>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 italic">Market value assessment pending</p>
+                        )}
+                      </div>
                     </div>
 
                     {/* Interested Industries */}
-                    <div>
-                      <h3 className="font-bold text-lg mb-2">🏭 Interested Industries:</h3>
-                      <ul className="list-disc pl-5 space-y-1">
+                    <div className="bg-white dark:bg-gray-700 p-4 rounded-lg border-l-4 border-purple-500">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                          <Building className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <h3 className="font-bold text-lg text-purple-800 dark:text-purple-200">Target Industries</h3>
+                      </div>
+                      <div className="ml-10 flex flex-wrap gap-2">
                         {Array.isArray(analysisResult.interestedIndustries) && analysisResult.interestedIndustries.length > 0 ? (
                           analysisResult.interestedIndustries.map((industry: string, idx: number) => (
-                            <li key={idx} className="text-gray-700 dark:text-gray-200">{industry}</li>
+                            <Badge key={idx} variant="outline" className="bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300">
+                              {industry}
+                            </Badge>
                           ))
                         ) : (
-                          <li className="text-gray-500">No data available.</li>
+                          <p className="text-gray-500 italic">Industry analysis in progress</p>
                         )}
-                      </ul>
+                      </div>
                     </div>
 
                     {/* Environmental Impact */}
-                    <div>
-                      <h3 className="font-bold text-lg mb-2">🌱 Environmental Impact:</h3>
-                      {analysisResult.environmentalImpact && typeof analysisResult.environmentalImpact === "object" ? (
-                        <ul className="list-disc pl-5 space-y-1">
-                          {Object.entries(analysisResult.environmentalImpact).map(([key, value]) => (
-                            <li key={key} className="text-green-800 dark:text-green-200">
-                              <span className="font-medium capitalize">{key}:</span> {value as string}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-gray-500">No data available.</span>
-                      )}
+                    <div className="bg-white dark:bg-gray-700 p-4 rounded-lg border-l-4 border-green-500">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                          <Leaf className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        </div>
+                        <h3 className="font-bold text-lg text-green-800 dark:text-green-200">Environmental Benefits</h3>
+                      </div>
+                      <div className="ml-10">
+                        {analysisResult.environmentalImpact && typeof analysisResult.environmentalImpact === "object" ? (
+                          <div className="space-y-3">
+                            {Object.entries(analysisResult.environmentalImpact).map(([key, value]) => (
+                              <div key={key} className="p-3 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-700">
+                                <h4 className="font-semibold text-green-800 dark:text-green-200 capitalize mb-1">{key}</h4>
+                                <p className="text-green-700 dark:text-green-300 leading-relaxed">{value as string}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 italic">Environmental impact analysis in progress</p>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex flex-col md:flex-row gap-4 mt-4">
-                      <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" asChild>
-                        <a href="/marketplace">Find Buyers</a>
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                      <Button 
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200" 
+                        size="lg"
+                        asChild
+                      >
+                        <a href="/marketplace" className="flex items-center justify-center gap-2">
+                          <Building className="h-5 w-5" />
+                          Find Buyers in Marketplace
+                        </a>
                       </Button>
-                      <Button variant="outline" onClick={resetAnalysis} className="flex-1">
+                      <Button 
+                        variant="outline" 
+                        onClick={resetAnalysis} 
+                        className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                        size="lg"
+                      >
                         <RefreshCcw className="h-5 w-5 mr-2" />
-                        Analyze Another
+                        Analyze Another Waste
                       </Button>
                     </div>
                   </CardContent>
